@@ -1,26 +1,546 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* ───────────────────────────────────────────────────────────────
+   Palette — SPORT × TECHNOLOGY × COMMUNITY
+   White ground, very light green / blue sections, charcoal type,
+   green + blue gradient accents. Never overwhelmingly green or blue.
+   ─────────────────────────────────────────────────────────────── */
+@theme {
+  --color-ink: #101817;
+  --color-ink-soft: #3d4a48;
+  --color-muted: #6b7876;
+
+  --color-soft-green: #f1fff5;
+  --color-soft-blue: #f0faff;
+  --color-mint: #b9f5c8;
+  --color-sky: #bdebff;
+  --color-green: #22c55e;
+  --color-green-deep: #16a34a;
+  --color-blue: #38bdf8;
+  --color-blue-deep: #0ea5e9;
+
+  /* Legacy names used by shared components */
+  --color-brand-50: #f0faff;
+  --color-brand-100: #bdebff;
+  --color-brand-200: #9fdcf7;
+  --color-brand-300: #7fd0f5;
+  --color-brand-500: #38bdf8;
+  --color-brand-600: #0ea5e9;
+  --color-brand-700: #0284c7;
+  --color-brand-900: #101817;
+  --color-turf-50: #f1fff5;
+  --color-turf-100: #b9f5c8;
+  --color-turf-200: #9beeb0;
+  --color-turf-300: #6ee392;
+  --color-turf-500: #22c55e;
+  --color-turf-600: #16a34a;
+  --color-turf-700: #15803d;
+  --color-turf-900: #101817;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-spin-slow: spin 14s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-gradient: gradient-x 6s ease infinite;
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --scroll-y: 0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  background: #ffffff;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Custom classes live in the components layer so Tailwind utilities
+   (md:grid, etc.) can still override them. */
+@layer components {
+  /* ── Gradient utilities ─────────────────────────────────────── */
+  .text-gradient {
+    background: linear-gradient(95deg, var(--color-green) 0%, var(--color-blue) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-arena {
+    background: linear-gradient(120deg, var(--color-mint) 0%, var(--color-sky) 100%);
+  }
+  .bg-arena-soft {
+    background: linear-gradient(150deg, var(--color-soft-green) 0%, #ffffff 45%, var(--color-soft-blue) 100%);
+  }
+  .btn-gradient {
+    background: linear-gradient(95deg, var(--color-green) 0%, var(--color-blue) 100%);
+    background-size: 200% 200%;
+    animation: gradient-x 6s ease infinite;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    backdrop-filter: saturate(160%) blur(14px);
+    border: 1px solid rgba(16, 24, 23, 0.06);
+  }
+
+  /* ── Horizontal snap strips ─────────────────────────────────── */
+  .snap-strip {
+    display: flex;
+    gap: 0.875rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+    overscroll-behavior-x: contain;
+  }
+  .snap-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .snap-strip > * {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
+}
+
+/* ── Scroll reveal (JS adds .reveal-ready to <html>, .is-in to items) ── */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s var(--ease-out-expo),
+    transform 0.7s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-ready [data-reveal='scale'] {
+  transform: scale(0.96);
+}
+.reveal-ready [data-reveal='left'] {
+  transform: translateX(-20px);
+}
+.reveal-ready [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes gradient-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(18px, -14px) rotate(180deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
+  }
+}
+@keyframes swing {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes ball-arc {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+@keyframes trail {
+  0% {
+    stroke-dashoffset: 600;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: -600;
+    opacity: 0;
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-8px) scale(1.25);
+  }
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes silhouette {
+  0% {
+    transform: translateX(-10%) translateY(0);
+  }
+  50% {
+    transform: translateX(6%) translateY(-6px);
+  }
+  100% {
+    transform: translateX(-10%) translateY(0);
+  }
+}
+
+/* Hero scene motion (paths defined in SVG via offset-path inline styles) */
+.ball-cricket {
+  animation: ball-arc 5.5s cubic-bezier(0.3, 0.1, 0.4, 1) infinite;
+}
+.trail-cricket {
+  stroke-dasharray: 120 600;
+  animation: trail 5.5s linear infinite;
+}
+.ball-shuttle {
+  animation: ball-arc 4.2s ease-in-out infinite 0.8s;
+}
+.trail-shuttle {
+  stroke-dasharray: 80 600;
+  animation: trail 4.2s linear infinite 0.8s;
+}
+.bat-swing {
+  transform-origin: 82% 92%;
+  animation: swing 5.5s ease-in-out infinite;
+}
+.football-drift {
+  animation: drift 12s ease-in-out infinite;
+  transform-origin: center;
+}
+.particle {
+  animation: twinkle var(--dur, 4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+.hero-layer {
+  transform: translate3d(0, calc(var(--scroll-y) * var(--depth, 0) * -1px), 0);
+  will-change: transform;
+}
+
+/* Steps: animated connector + numbers */
+.steps-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+.is-in .steps-line {
+  animation: draw 1.6s var(--ease-out-expo) forwards 0.2s;
+}
+.is-in .step-num {
+  animation: pop 0.7s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 0.35s + 0.3s);
+}
+
+/* FAQ */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details[open] .faq-body {
+  animation: faq-in 0.35s var(--ease-out-expo);
+}
+@keyframes faq-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Booking outcome burst (components/book/StatusBurst.tsx) ─────
+   A couple of seconds of animation over the blurred page, then gone.
+   No scroll lock anywhere: the layer is pointer-events-none, so it
+   never has to hand the page back and can never leak a lock. */
+.burst-layer {
+  animation: burst-in 0.3s ease-out both;
+}
+.burst-layer[data-leaving] {
+  animation: burst-out 0.45s ease-in both;
+}
+.burst-caption {
+  animation: burst-caption 0.6s var(--ease-out-expo) both 0.45s;
+}
+
+/* Confirmed — two flutes swing together, clink, and fizz. */
+.cheers-left {
+  animation: cheers-left 1.15s var(--ease-out-expo) both 0.1s;
+}
+.cheers-right {
+  animation: cheers-right 1.15s var(--ease-out-expo) both 0.1s;
+}
+.cheers-spark {
+  animation: spark 0.75s ease-out both 0.62s;
+}
+.bubble {
+  animation: bubble-rise var(--dur, 1.6s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+.confetti-piece {
+  position: absolute;
+  top: -8vh;
+  will-change: transform;
+  animation: confetti-fall var(--dur, 3s) linear both;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Waiting — the hand goes round while the ring draws itself. */
+.clock-hand {
+  animation: spin 1.5s linear infinite;
+}
+.ring-draw {
+  stroke-dasharray: 340;
+  stroke-dashoffset: 340;
+  animation: draw 0.9s var(--ease-out-expo) both 0.1s;
+}
+
+/* Stopped — the cross draws in, then a small shake of the head. The beats are
+   spread to fill the 3.3 s this scene is given (see PLAY_MS in StatusBurst). */
+.x-draw {
+  stroke-dasharray: 52;
+  stroke-dashoffset: 52;
+  animation: draw 0.35s ease-out both 1.05s;
+}
+.x-draw-2 {
+  animation-delay: 1.3s;
+}
+.burst-shake {
+  animation: shake-x 0.55s ease-in-out both 1.85s;
+}
+
+@keyframes burst-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes burst-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+@keyframes burst-caption {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cheers-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-42px) rotate(-26deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  55% {
+    transform: translateX(0) rotate(14deg);
+  }
+  72% {
+    transform: translateX(-3px) rotate(9deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(12deg);
+  }
+}
+@keyframes cheers-right {
+  0% {
+    opacity: 0;
+    transform: translateX(42px) rotate(26deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  55% {
+    transform: translateX(0) rotate(-14deg);
+  }
+  72% {
+    transform: translateX(3px) rotate(-9deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(-12deg);
+  }
+}
+@keyframes spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@keyframes bubble-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  25% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-38px) scale(1);
+  }
+}
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-7px);
+  }
+  75% {
+    transform: translateX(7px);
+  }
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx, 0px), 118vh, 0) rotate(var(--spin, 720deg));
+  }
+}
+
+/* Silhouettes in final CTA */
+.silhouette {
+  animation: silhouette 18s ease-in-out infinite;
+}
+.silhouette-2 {
+  animation: silhouette 24s ease-in-out infinite reverse;
+}
+
+/* ── Reduced motion: everything settles, nothing moves ─────── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+  .ball-cricket,
+  .ball-shuttle {
+    offset-distance: 60%;
+    opacity: 1;
+  }
+  .hero-layer {
+    transform: none;
+  }
+  .steps-line {
+    stroke-dashoffset: 0;
+  }
 }

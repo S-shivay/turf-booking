@@ -1,0 +1,512 @@
+/* ─────────────────────────────────────────────────────────────────
+   Cricket Turf Loader — CSS 3D scene
+   Scene size is driven by --s (px). Everything inside is relative to it,
+   so the same markup scales from a 150px phone loader to 250px desktop.
+   ───────────────────────────────────────────────────────────────── */
+
+/* ── Overlay (blurs the app behind it, never itself) ─────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  touch-action: none;
+}
+/* Blur + tint live on their own layer so the 3D scene (a sibling, not a
+   descendant) never disturbs the backdrop-filter region. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 16, 14, 0.5);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  opacity: 1;
+  transition:
+    opacity 320ms cubic-bezier(0.2, 0, 0, 1),
+    backdrop-filter 320ms cubic-bezier(0.2, 0, 0, 1),
+    -webkit-backdrop-filter 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+.overlay[data-phase='entering'] .backdrop,
+.overlay[data-phase='exiting'] .backdrop {
+  opacity: 0;
+  -webkit-backdrop-filter: blur(0px) saturate(100%);
+  backdrop-filter: blur(0px) saturate(100%);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: scale(1);
+  opacity: 1;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease;
+}
+.overlay[data-phase='entering'] .card {
+  transform: scale(0.95);
+  opacity: 0;
+}
+.overlay[data-phase='exiting'] .card {
+  transform: scale(0.98);
+  opacity: 0;
+}
+/* Ease the ball down as we leave — nothing snaps. */
+.overlay[data-phase='exiting'] .scene * {
+  animation-play-state: paused;
+}
+
+/* ── Scene ───────────────────────────────────────────────────────── */
+.scene {
+  --s: 150px;
+  --cycle: 3.2s;
+  --turf: #1f7a3d;
+  --turf-dark: #14532d;
+  --pitch: #c9b98a;
+  --ink: #101817;
+  --ball: #d4213f;
+  width: var(--s);
+  height: calc(var(--s) * 0.82);
+  position: relative;
+  perspective: calc(var(--s) * 3.4);
+  perspective-origin: 50% 30%;
+}
+@media (min-width: 640px) {
+  .scene {
+    --s: 200px;
+  }
+}
+@media (min-width: 1024px) {
+  .scene {
+    --s: 250px;
+  }
+}
+
+/* Ground plane, tilted toward the camera. Everything sits in its coords. */
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: var(--s);
+  height: var(--s);
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateX(58deg) rotateZ(-32deg);
+}
+
+/* Soft platform + floodlight pool */
+.platform {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.12), transparent 55%),
+    radial-gradient(circle, #2a3331 0%, #171d1c 62%, #0d1211 100%);
+  box-shadow:
+    0 calc(var(--s) * 0.16) calc(var(--s) * 0.3) rgba(0, 0, 0, 0.55),
+    inset 0 0 calc(var(--s) * 0.08) rgba(0, 0, 0, 0.6);
+}
+.platform::after {
+  /* gold rim */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(214, 178, 96, 0.25);
+}
+
+.turf {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.1), transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 8.3%, rgba(0, 0, 0, 0.08) 8.3% 16.6%),
+    radial-gradient(circle, var(--turf) 0%, var(--turf-dark) 78%, #0f3d21 100%);
+  box-shadow: inset 0 0 calc(var(--s) * 0.06) rgba(0, 0, 0, 0.5);
+}
+.turf::before {
+  /* subtle grass grain */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 0, 0, 0.05) 3px 4px);
+  mix-blend-mode: multiply;
+}
+
+.pitch {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 40%;
+  height: 20%;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.15), transparent 20%, transparent 80%, rgba(0, 0, 0, 0.15)),
+    linear-gradient(180deg, #d6c79a, var(--pitch) 50%, #b8a678);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+}
+/* creases */
+.pitch::before,
+.pitch::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.pitch::before {
+  right: 10%;
+}
+.pitch::after {
+  left: 10%;
+}
+.creaseBox {
+  position: absolute;
+  right: 4%;
+  top: 22%;
+  bottom: 22%;
+  width: 12%;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-left: none;
+}
+
+/* ── Stumps: a vertical plane standing across the pitch ─────────── */
+.stumps {
+  position: absolute;
+  left: 78%;
+  top: 50%;
+  width: calc(var(--s) * 0.15);
+  height: calc(var(--s) * 0.22);
+  transform-origin: 50% 100%;
+  /* stand up (rotateX) then turn to run across the pitch (rotateZ) */
+  transform: translate(-50%, -100%) rotateZ(90deg) rotateX(-90deg);
+  transform-style: preserve-3d;
+}
+.stumpsWobble {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  animation: stumpsHit var(--cycle) cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+.stump {
+  position: absolute;
+  bottom: 0;
+  width: 14%;
+  height: 92%;
+  border-radius: 40% 40% 2px 2px / 8% 8% 2px 2px;
+  background: linear-gradient(90deg, #8a7448 0%, #f2e3bf 38%, #d9c393 70%, #6e5a35 100%);
+  box-shadow:
+    0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 -6px 8px rgba(0, 0, 0, 0.25);
+}
+.stump:nth-child(1) {
+  left: 14%;
+}
+.stump:nth-child(2) {
+  left: 43%;
+}
+.stump:nth-child(3) {
+  left: 72%;
+}
+.bail {
+  position: absolute;
+  top: 6%;
+  height: 7%;
+  width: 34%;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f6e9c9, #b79a5c);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+.bail:nth-child(4) {
+  left: 18%;
+}
+.bail:nth-child(5) {
+  left: 47%;
+}
+.stumpsShadow {
+  position: absolute;
+  left: 78%;
+  top: 50%;
+  width: calc(var(--s) * 0.06);
+  height: calc(var(--s) * 0.16);
+  transform: translate(-30%, -50%) rotate(-20deg);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  filter: blur(3px);
+}
+
+/* ── Ball: ground track → lift (Z) → billboarded sphere ─────────── */
+.ballTrack {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  animation: ballTravel var(--cycle) linear infinite;
+}
+.ballLift {
+  position: absolute;
+  transform-style: preserve-3d;
+  animation: ballLift var(--cycle) linear infinite;
+}
+.ball {
+  --d: calc(var(--s) * 0.095);
+  position: absolute;
+  width: var(--d);
+  height: var(--d);
+  margin: calc(var(--d) * -0.5) 0 0 calc(var(--d) * -0.5);
+  border-radius: 50%;
+  /* undo the stage tilt so the sphere always faces the camera */
+  transform: rotateZ(32deg) rotateX(-58deg);
+  background: radial-gradient(circle at 34% 30%, #ff8a97 0%, var(--ball) 34%, #8f1229 72%, #4a0a17 100%);
+  box-shadow:
+    inset calc(var(--d) * -0.12) calc(var(--d) * -0.14) calc(var(--d) * 0.18) rgba(0, 0, 0, 0.55),
+    inset calc(var(--d) * 0.06) calc(var(--d) * 0.06) calc(var(--d) * 0.1) rgba(255, 255, 255, 0.25),
+    0 0 calc(var(--d) * 0.6) rgba(212, 33, 63, 0.35);
+  overflow: hidden;
+  animation: ballFade var(--cycle) linear infinite;
+}
+.seam {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.85);
+  transform: rotateX(62deg) rotateZ(0deg);
+  animation: seamSpin calc(var(--cycle) / 4) linear infinite;
+  opacity: 0.9;
+}
+.seam2 {
+  composes: seam;
+  inset: 20%;
+  border-color: rgba(255, 255, 255, 0.45);
+  animation-duration: calc(var(--cycle) / 3);
+  animation-direction: reverse;
+}
+.ballShadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--s) * 0.13);
+  height: calc(var(--s) * 0.09);
+  margin: calc(var(--s) * -0.045) 0 0 calc(var(--s) * -0.065);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  filter: blur(2px);
+  animation:
+    ballTravel var(--cycle) linear infinite,
+    shadowScale var(--cycle) linear infinite;
+}
+
+/* Light sweep on the scene edge — floodlight feel */
+.glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(var(--s) * 1.15);
+  height: calc(var(--s) * 0.7);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(34, 197, 94, 0.28), rgba(56, 189, 248, 0.12) 45%, transparent 70%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* ── Message ─────────────────────────────────────────────────────── */
+.message {
+  margin-top: 4px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@media (min-width: 640px) {
+  .message {
+    font-size: 15px;
+  }
+}
+.hint {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────── */
+/* Ground track: enter left → bounce → stumps → exit right */
+@keyframes ballTravel {
+  0% {
+    transform: translateX(calc(var(--s) * -0.46));
+    animation-timing-function: ease-out;
+  }
+  34% {
+    transform: translateX(calc(var(--s) * -0.02));
+    animation-timing-function: linear;
+  }
+  62% {
+    transform: translateX(calc(var(--s) * 0.27));
+    animation-timing-function: ease-out;
+  }
+  84%,
+  100% {
+    transform: translateX(calc(var(--s) * 0.44));
+  }
+}
+/* Fade on the sphere itself: opacity on a preserve-3d parent would flatten it. */
+@keyframes ballFade {
+  0% {
+    opacity: 0;
+  }
+  6%,
+  72% {
+    opacity: 1;
+  }
+  84%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Height above the turf (Z): fast descent, bounce, low skid into the stumps, pop up */
+@keyframes ballLift {
+  0% {
+    transform: translateZ(calc(var(--s) * 0.3));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.45);
+  }
+  34% {
+    transform: translateZ(calc(var(--s) * 0.06));
+    animation-timing-function: cubic-bezier(0.1, 0.8, 0.3, 1);
+  }
+  48% {
+    transform: translateZ(calc(var(--s) * 0.15));
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.5);
+  }
+  62% {
+    transform: translateZ(calc(var(--s) * 0.1));
+    animation-timing-function: cubic-bezier(0.1, 0.8, 0.3, 1);
+  }
+  84%,
+  100% {
+    transform: translateZ(calc(var(--s) * 0.26));
+  }
+}
+/* Contact shadow: smaller/lighter when the ball is high */
+@keyframes shadowScale {
+  0% {
+    scale: 0.55;
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.35;
+  }
+  34% {
+    scale: 1;
+    opacity: 0.6;
+  }
+  48% {
+    scale: 0.8;
+    opacity: 0.45;
+  }
+  62% {
+    scale: 0.9;
+    opacity: 0.55;
+  }
+  72% {
+    opacity: 0.35;
+  }
+  84%,
+  100% {
+    scale: 0.55;
+    opacity: 0;
+  }
+}
+@keyframes seamSpin {
+  to {
+    transform: rotateX(62deg) rotateZ(360deg);
+  }
+}
+/* Stumps take the hit at ~62% and settle */
+@keyframes stumpsHit {
+  0%,
+  61% {
+    transform: rotateX(0deg);
+  }
+  65% {
+    transform: rotateX(11deg);
+  }
+  71% {
+    transform: rotateX(-5deg);
+  }
+  77% {
+    transform: rotateX(2deg);
+  }
+  82%,
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes floatBall {
+  0%,
+  100% {
+    transform: translateZ(calc(var(--s) * 0.12));
+  }
+  50% {
+    transform: translateZ(calc(var(--s) * 0.18));
+  }
+}
+
+/* ── Reduced motion: same branding, a gentle float instead of the play ── */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .card {
+    transition-duration: 150ms;
+  }
+  .ballTrack,
+  .ballShadow,
+  .ball {
+    animation: none;
+    opacity: 1;
+  }
+  .ballTrack,
+  .ballShadow {
+    transform: translateX(calc(var(--s) * 0.02));
+  }
+  .ballShadow {
+    scale: 0.85;
+    opacity: 0.45;
+  }
+  .ballLift {
+    animation: floatBall 3s ease-in-out infinite;
+  }
+  .seam,
+  .seam2 {
+    animation: none;
+  }
+  .stumpsWobble {
+    animation: none;
+  }
+  .message {
+    animation: none;
+    opacity: 0.9;
+  }
+}

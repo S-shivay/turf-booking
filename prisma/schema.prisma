@@ -1,0 +1,167 @@
+// Prisma 7 schema for turf-booking
+// The datasource URL lives in prisma7.config.ts, not here.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  OWNER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum RefundMethod {
+  GATEWAY
+  MANUAL
+  NONE
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+
+  bookings  Booking[] @relation("CustomerBookings")
+  cancelled Booking[] @relation("CancelledBy")
+}
+
+model Turf {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  address     String
+  phone       String
+  email       String
+  lat         Float
+  lng         Float
+  images      String[]
+
+  ownerName  String
+  ownerPhone String
+
+  // 6 = 6 AM, 25 = 1 AM next day
+  openHour              Int     @default(6)
+  closeHour             Int     @default(25)
+  pricePerPersonPerSlot Int     @default(50)
+  minPeople             Int     @default(2)
+  maxPeople             Int     @default(14)
+  isActive              Boolean @default(true)
+
+  bookings Booking[]
+  slots    Slot[]
+}
+
+model Booking {
+  id             String @id @default(cuid())
+  idempotencyKey String @unique
+  turfId         String
+  userId         String
+  numPeople      Int
+  slotCount      Int
+
+  // stored in paise
+  totalAmount   Int
+  status        BookingStatus @default(PENDING)
+  bookedByOwner Boolean       @default(false)
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+  // upi | card | netbanking | wallet
+  paymentMethod     String?
+
+  cancelledById String?
+  cancelledAt   DateTime?
+  cancelReason  String?
+
+  refundMethod RefundMethod?
+  refundAmount Int?
+  refundStatus RefundStatus?
+  // Razorpay refund id, UPI UTR, or "cash"
+  refundReference String?
+  refundNote      String?
+  refundMarkedBy  String?
+  refundMarkedAt  DateTime?
+
+  // --- Reschedule ---------------------------------------------------------
+  // A reschedule is a second Booking that replaces this one once it is paid
+  // for, so the customer never loses their original times until the new ones
+  // are actually theirs. `rescheduleOfId` points from the replacement back to
+  // the booking it will replace.
+  rescheduleOfId String?
+  rescheduleOf   Booking?  @relation("Rescheduled", fields: [rescheduleOfId], references: [id])
+  replacedBy     Booking[] @relation("Rescheduled")
+  // Paise carried over from the booking being replaced. The customer pays
+  // `totalAmount - creditApplied`, which is never negative: a reschedule may
+  // only keep or raise the number of players and times, never lower it.
+  creditApplied Int @default(0)
+  // The exact slots a reschedule is asking for. Its own Slot rows cover only
+  // the ones the original does not already hold — the overlap stays with the
+  // original until the swap, so nobody else can take it and nothing is lost
+  // if the payment never arrives.
+  requestedSlots DateTime[] @db.Timestamptz
+
+  // Envelope of the booked slots, denormalised so cancelled bookings
+  // (whose Slot rows are deleted) still show their times, and so the
+  // owner dashboard can list upcoming bookings without joining Slot.
+  startsAt DateTime @db.Timestamptz
+  endsAt   DateTime @db.Timestamptz
+
+  // set on PENDING holds only
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  turf      Turf   @relation(fields: [turfId], references: [id])
+  user      User   @relation("CustomerBookings", fields: [userId], references: [id])
+  canceller User?  @relation("CancelledBy", fields: [cancelledById], references: [id])
+  slots     Slot[]
+
+  @@index([turfId, status])
+  @@index([status, expiresAt])
+  @@index([turfId, startsAt])
+  // The owner desk: filtered by turf, ordered by when the booking was made —
+  // last booked, first shown (owner, 22 Sep 2026)
+  @@index([turfId, createdAt])
+  // rate limiting + active-hold cap per user, and "my bookings" — which is
+  // ordered by when the booking was made, not when the game is
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  // finding a booking's live reschedule attempt
+  @@index([rescheduleOfId])
+}
+
+model Slot {
+  id           String   @id @default(cuid())
+  bookingId    String
+  turfId       String
+  slotStart    DateTime @db.Timestamptz
+  businessDate DateTime @db.Date
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  turf    Turf    @relation(fields: [turfId], references: [id])
+
+  // This is what physically prevents double booking.
+  @@unique([turfId, slotStart])
+  @@index([turfId, businessDate])
+}
