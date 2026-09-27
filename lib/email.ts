@@ -1,15 +1,16 @@
 import 'server-only';
 import { Resend } from 'resend';
 import { describeSlots, formatDateKey, businessDateKeyOf } from '@/lib/slots';
-import { formatRupees, ownerEmails } from '@/lib/utils';
+import { envOr, formatRupees, ownerEmails } from '@/lib/utils';
 import type { RefundMethod } from '@/generated/prisma/client';
 
-const FROM = process.env.EMAIL_FROM ?? 'Turf Booking <onboarding@resend.dev>';
+const FROM = envOr(process.env.EMAIL_FROM, 'Turf Booking <onboarding@resend.dev>');
 
 let client: Resend | null | undefined;
 function resend(): Resend | null {
   if (client !== undefined) return client;
-  client = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+  const key = process.env.RESEND_API_KEY?.trim();
+  client = key ? new Resend(key) : null;
   if (!client) console.warn('[email] RESEND_API_KEY not set — emails are logged, not sent');
   return client;
 }

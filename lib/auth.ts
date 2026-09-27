@@ -19,7 +19,7 @@ export function isOwnerEmail(email: string): boolean {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Auth.js reads AUTH_SECRET; the .env currently names it BETTER_AUTH_SECRET.
   // Fallback keeps dev running — rename the variable when convenient.
-  secret: process.env.AUTH_SECRET ?? process.env.BETTER_AUTH_SECRET,
+  secret: process.env.AUTH_SECRET?.trim() || process.env.BETTER_AUTH_SECRET?.trim() || undefined,
   providers: [Google],
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   trustHost: true,

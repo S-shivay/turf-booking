@@ -1,12 +1,14 @@
 import 'server-only';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
+import { envOr } from '@/lib/utils';
 
 // One bounded pool per server instance. Serverless instances are small and
 // short-lived, so keep `max` modest — Neon's pooler multiplexes behind it.
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
-  max: Number(process.env.DB_POOL_MAX ?? 10),
+  // The || also catches a non-numeric value, which Number() makes NaN.
+  max: Number(envOr(process.env.DB_POOL_MAX, '10')) || 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
 });
