@@ -75,13 +75,17 @@ income report is fiction.
 **Pick the region now, and pick it to match Vercel** (§3.4). Every page render makes several database
 round trips, so the distance between the function and the database is most of your latency budget:
 
-| Your players are in | Neon region | Vercel region |
-|---|---|---|
-| India (recommended) | `ap-south-1` (Mumbai) | `bom1` (Mumbai) |
-| Your current dev DB | `ap-southeast-1` (Singapore) | `sin1` (Singapore) |
+**Look at Neon's region list and apply this rule**, because what Neon offers changes over time:
 
-Mumbai + Mumbai is the right pair for a turf in India. It is worth ~100 ms per request over
-Singapore, and the targets in `CLAUDE.md` (`/api/slots` under 150 ms) assume the two are close.
+| If the list has | Choose | And set Vercel's function region to |
+|---|---|---|
+| Mumbai (`ap-south-1`) | Mumbai | `bom1` (Mumbai) |
+| otherwise | Singapore (`ap-southeast-1`) | `sin1` (Singapore) |
+
+Mumbai is better for players in India, but **matching matters more than distance**: a function in
+Mumbai talking to a database in Singapore is worse than both being in Singapore, because one page
+render makes several round trips. The targets in `CLAUDE.md` (`/api/slots` under 150 ms) assume the
+two are in the same place. Your dev database is in Singapore, so Singapore is certainly available.
 
 **2.2 — Copy both connection strings.** Neon gives you two, and you need both:
 
@@ -117,9 +121,11 @@ production URL.
 npx prisma db seed
 ```
 
-`prisma/seed.ts` calls `turf.create`, so **running it twice creates a second turf** and the site
-(`getTurf()` → `findFirst`) silently keeps showing the first. If you do it by accident, delete the
-extra row before going further.
+`prisma/seed.ts` is idempotent (27 Sep 2026): it looks for an active Turf first and does nothing if
+one already exists, so a second run cannot leave you with two. That matters because the site reads
+the **first** active row (`getTurf()` → `findFirst`) — a stray second turf would be invisible rather
+than obviously wrong. Fill the `TURF` block at the top of the seed in before running it against
+production, or put the real details in afterwards (2.6).
 
 **2.6 — Put your real details in that row.** The seed writes placeholders (`Your Turf Name`,
 `9xxxxxxxxx`, a Kanpur lat/lng). These are not cosmetic: the turf's name, address, phone and email
