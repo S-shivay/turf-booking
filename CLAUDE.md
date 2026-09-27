@@ -62,7 +62,7 @@ Single-turf **box cricket** booking website: information pages + a 7-day slot gr
 | Email | Resend | `lib/email.ts` |
 | Validation | zod, `lib/validation.ts` | every external input, `.strict()` |
 | Tests | vitest | `npx vitest run` — **unit tests only**: `vitest.config.mts` teaches it the `@/` alias and limits `include` to `lib/**/*.test.ts`. Anything that needs the database is written as a throwaway `lib/*.itest.ts` with its own config (alias `server-only` to `node_modules/server-only/empty.js`, load `.env` in a setup file — vitest does not), run once, then deleted. Such a test must create its own rows on business dates 2–3 weeks out, clear of real bookings, and delete exactly what it made. |
-| Hosting | Vercel + Vercel Cron (`vercel.json`, every 10 min) | |
+| Hosting | Vercel + Vercel Cron (`vercel.json`) | **Daily (2:00 AM IST) — a Hobby plan refuses to deploy a sub-daily cron at all.** Restore `*/10 * * * *` on Pro; until then an external scheduler can call `/api/cron/expire-holds` with the Bearer secret. Expiry also runs inline on overlapping booking attempts, so the board stays correct regardless. |
 
 Commands: `npm run dev` · `npm run build` · `npm run lint` · `npx tsc --noEmit` · `npx vitest run` · `npx prisma migrate dev --name <x>` · `npx prisma db seed` · `npx prisma studio`.
 

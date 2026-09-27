@@ -359,15 +359,20 @@ for a first deploy, not for a real one.
 `vercel.json` is already in the repo:
 
 ```json
-{ "crons": [{ "path": "/api/cron/expire-holds", "schedule": "*/10 * * * *" }] }
+{ "crons": [{ "path": "/api/cron/expire-holds", "schedule": "30 20 * * *" }] }
 ```
+
+**That schedule is daily (2:00 AM IST) because a Hobby plan refuses to deploy at all otherwise**
+(27 Sep 2026, hit on the first deploy): *"Hobby accounts are limited to daily cron jobs. This cron
+expression would run more than once per day."* It is a hard block on the deployment, not a silent
+downgrade. The original schedule was every 10 minutes; restore it the moment the account is on Pro,
+and until then get 10-minute coverage from an external scheduler (below).
 
 Vercel picks it up on deploy — nothing to configure. Because `CRON_SECRET` is set, Vercel sends
 `Authorization: Bearer <CRON_SECRET>` and the route compares it in constant time; anything else gets
 a 401.
 
-**Check your plan's cron limits.** Vercel's Hobby tier restricts cron jobs to roughly one run per
-day; a ten-minute schedule needs Pro. Two ways to live with that:
+**Two ways to get back to 10-minute expiry:**
 
 - **Upgrade to Pro** (also gives you longer function timeouts, which the export route may want on a
   big date range), or
